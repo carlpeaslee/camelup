@@ -1,5 +1,6 @@
 import React, { Component } from 'react'
 import styled from 'styled-components'
+import io from 'socket.io-client'
 
 
 
@@ -14,13 +15,8 @@ class App extends Component {
   ]
 
   state = {
-    started: false,
-    red: "",
-    green: "",
-    blue: "",
-    white: "",
-    yellow: "",
-    unpickedColors: this.colors.slice()
+    unpickedColors: [],
+    highlighted: ""
   }
 
   constructor(props){
@@ -38,34 +34,19 @@ class App extends Component {
         highlighted
       },
       roll,
-      nextRound,
     } = this
 
 
     return (
       <div>
 
+
         <button
-          onClick={()=>this.setState({started: true})}
+          onClick={this.roll}
         >
-          start
+          Roll
         </button>
 
-        {(unpickedColors.length !== 0) ? (
-          <button
-            onClick={this.lightUp}
-          >
-            Roll
-          </button>
-        ): null}
-
-        {(unpickedColors.length === 0) ? (
-          <button
-            onClick={nextRound}
-          >
-            Next Round
-          </button>
-        ): null}
 
         <Container>
           {colors.map( color => (
@@ -87,38 +68,39 @@ class App extends Component {
     )
   }
 
-  lightUp = async () => {
+  componentDidMount () {
+    this.socket = io()
+    this.socket.on('state', this.handleState)
+  }
+
+  // close socket connection
+  componentWillUnmount () {
+    this.socket.off('state', this.handleState)
+    this.socket.close()
+  }
+
+  handleState = async (state) => {
     try {
+      if (state.pick !== this.state.pick) {
 
-      let times = this.flicks.slice()
+        await this.lightup()
 
-      while (times.length > 1) {
-        await this.blink(times.shift())
+        this.setState({...state})
+
+
+      } else {
+        this.setState({...state})
       }
-
-      this.timeout = setTimeout(
-        ()=>{
-
-          this.roll()
-        },
-        times.shift()
-      )
 
     } catch (ex) {
       console.error(ex)
     }
   }
 
-  nextRound = () => {
-    this.setState({
-      unpickedColors: this.colors.slice(),
-      red: "",
-      green: "",
-      blue: "",
-      white: "",
-      yellow: "",
-    })
+  roll = () => {
+    this.socket.emit('roll', this.state)
   }
+
 
   createFlicker = () => {
     this.flicks = new Array(20).fill(80)
@@ -126,52 +108,6 @@ class App extends Component {
       this.flicks.push(this.fib(i) * 100)
     }
 
-  }
-
-  blink = async (duration) => {
-    return new Promise( (resolve, reject) => {
-      this.timeout = setTimeout(
-        () => {
-
-          const {
-            unpickedColors
-          } = this.state
-
-          let highlighted = unpickedColors[this.getRandom(0,this.getRandom(0,unpickedColors.length - 1))]
-
-
-
-
-          console.log(duration)
-
-          this.setState(() => ({
-            highlighted
-          }), resolve())
-
-        },
-        duration
-      )
-    })
-  }
-
-
-  roll = () => {
-    this.setState( prevState => {
-
-      let oldUnpicked = prevState.unpickedColors
-
-      let pick = oldUnpicked.splice(this.getRandom(0, oldUnpicked.length - 1),1)[0]
-
-
-      let unpickedColors = oldUnpicked
-
-      return {
-        unpickedColors,
-        [pick]: this.getRandom(1,3),
-        lastPick: pick
-
-      }
-    })
   }
 
   memo = {}
@@ -185,12 +121,54 @@ class App extends Component {
     return memo[num] = this.fib(num - 1, memo) + this.fib(num - 2, memo)
   }
 
+  lightup = async() => {
+    try {
+      let times = this.flicks.slice()
+
+      while (times.length > 1) {
+        await this.blink(times.shift())
+      }
+
+    } catch (ex) {
+      console.error(ex)
+    }
+  }
+
+
+  blink = async (duration) => {
+    return new Promise( (resolve, reject) => {
+      this.timeout = setTimeout(
+        () => {
+
+          const {
+            unpickedColors,
+            highlighted
+          } = this.state
+
+          let unpicked = unpickedColors.filter(color => color !== highlighted)
+
+
+          let newHighlight = unpicked[this.getRandom(0,this.getRandom(0,unpicked.length - 1))]
+
+
+          this.setState(() => ({
+            highlighted: newHighlight
+          }), resolve())
+
+        },
+        duration
+      )
+    })
+  }
 
   getRandom = (min, max) => {
     min = Math.ceil(min)
     max = Math.floor(max)
     return Math.floor(Math.random() * (max - min + 1)) + min
   }
+
+
+
 
 }
 
