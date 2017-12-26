@@ -1,7 +1,7 @@
 import React, { Component } from 'react'
 import styled from 'styled-components'
 import io from 'socket.io-client'
-
+import Camel from '../icons/Camel'
 
 
 class App extends Component {
@@ -29,42 +29,30 @@ class App extends Component {
     const {
       colors,
       state,
+      createFill,
       state: {
         unpickedColors,
         highlighted
       },
-      roll,
     } = this
 
 
     return (
-      <div>
-
-
-        <button
-          onClick={this.roll}
-        >
-          Roll
-        </button>
-
-
-        <Container>
+      <Container>
           {colors.map( color => (
-            <Camel
+            <Pair
               key={color}
-              color={color}
-              highlighted={highlighted}
-              unpickedColors={unpickedColors}
             >
-              {state[color]}
-            </Camel>
+              <Camel
+                fill={createFill(color)}
+              />
+              <Numb>
+                {state[color]}
+              </Numb>
+            </Pair>
+
           ))}
         </Container>
-
-
-
-
-      </div>
     )
   }
 
@@ -79,13 +67,85 @@ class App extends Component {
     this.socket.close()
   }
 
+  createFill = (color) => {
+    const {
+      pick,
+      highlighted,
+      unpickedColors
+    } = this.state
+
+    let r, g, b, a
+    switch (color) {
+      case "red": {
+        r = 255
+        g = 0
+        b = 0
+        break
+      }
+      case "blue": {
+        r = 0
+        g = 0
+        b = 255
+        break
+      }
+      case "white": {
+        r = 255
+        g = 255
+        b = 255
+        break
+      }
+      case "yellow": {
+        r = 255
+        g = 255
+        b = 0
+        break
+      }
+      case "green": {
+        r = 0
+        g = 153
+        b = 51
+        break
+      }
+      default: {
+        r = 0
+        g = 0
+        b = 0
+        break
+      }
+    }
+    if (
+      color === pick
+    ) {
+      a = 1
+    } else if (
+      color === highlighted
+    ) {
+      a = .7
+    } else if (
+      unpickedColors.includes(color)
+    ) {
+      a = .3
+    } else {
+      a = 1
+    }
+
+    return `rgba(${r},${g}, ${b}, ${a})`
+  }
+
   handleState = async (state) => {
     try {
-      if (state.pick !== this.state.pick) {
+
+      if (
+        state.pick !== this.state.pick &&
+        state.pick
+      ) {
 
         await this.lightup()
 
-        this.setState({...state})
+        this.setState({
+          ...state,
+          highlighted: undefined
+        })
 
 
       } else {
@@ -95,10 +155,6 @@ class App extends Component {
     } catch (ex) {
       console.error(ex)
     }
-  }
-
-  roll = () => {
-    this.socket.emit('roll', this.state)
   }
 
 
@@ -181,34 +237,27 @@ const Container = styled.div`
   background-color: black;
   justify-content: space-around;
   align-items: center;
+  flex-wrap: wrap;
 `
 
-const Camel = styled.div`
-  width: 200px;
-  height: 200px;
-  background-color: ${({color}) => color};
-  opacity: ${({highlighted, color, lastPick, unpickedColors}) => {
-    if (
-      lastPick === color
-    ) {
-      return 1
-    } else if (
-      highlighted === color
-    ) {
-      return .6
-    } else if (
-      !unpickedColors.includes(color)
-    ) {
-      return .8
-    } else {
-      return .2
-    }
-  }};
-  outline: 1px solid black;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 3em;
+const Pair = styled.div`
+  width: 33%;
+  height: 40vh;
+  position: relative;
+`
+
+const Numb = styled.div`
+  font-size: 5em;
+  font-family: sans-serif;
+  position:absolute;
+  color: white;
+  background-color: rgba(0,0,0,.7);
+  height: 1.5em;
+  width: .8em;
+  top: 0;
+  left: 27%;
+  text-align: center;
+  padding-top: .2em;
 `
 
 export default App

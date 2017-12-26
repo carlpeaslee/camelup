@@ -13,6 +13,8 @@
     "styled-components": "^2.2.4"
   },
   "scripts": {
-    "start": "node server"
+    "dev": "node server.js",
+    "build": "next build",
+    "start": "NODE_ENV=production node server.js"
   }
 }

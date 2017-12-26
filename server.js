@@ -8,31 +8,34 @@ const dev = process.env.NODE_ENV !== 'production'
 const nextApp = next({ dev })
 const nextHandler = nextApp.getRequestHandler()
 
-
-let state = {
-
+const initialState = {
+  colors: [
+    "red",
+    "green",
+    "blue",
+    "white",
+    "yellow"
+  ],
+  unpickedColors: [
+    "red",
+    "green",
+    "blue",
+    "white",
+    "yellow"
+  ],
+  red: false,
+  yellow: false,
+  green: false,
+  white: false,
+  blue: false,
+  pick: false
 }
 
-state.colors = [
-  "red",
-  "green",
-  "blue",
-  "white",
-  "yellow"
-]
 
-state.unpickedColors = [
-  "red",
-  "green",
-  "blue",
-  "white",
-  "yellow"
-]
+let state = {
+  ...initialState
+}
 
-
-state.colors.forEach(color => state[color] = undefined)
-
-state.pick = undefined
 
 const getRandom = (min, max) => {
   min = Math.ceil(min)
@@ -63,13 +66,31 @@ io.on('connection', socket => {
 
   socket.on('roll', (data) => {
 
-    roll()
+    if (state.unpickedColors.length > 0){
+      roll()
+    } else {
+      state = {
+        ...initialState
+      }
+    }
 
     io.in('camel').emit('state', state)
   })
 })
 
 nextApp.prepare().then(() => {
+
+  app.get('/trigger', ()=>{
+    if (state.unpickedColors.length > 0){
+      roll()
+    } else {
+      state = {
+        ...initialState
+      }
+    }
+
+    io.in('camel').emit('state', state)
+  })
 
   app.get('*', (req, res) => {
     return nextHandler(req, res)
