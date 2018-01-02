@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import styled from 'styled-components'
+import styled, {injectGlobal} from 'styled-components'
 import io from 'socket.io-client'
 import Camel from '../icons/Camel'
 
@@ -14,12 +14,17 @@ class RollButton extends Component {
     "yellow"
   ]
 
+  state = {
+    disabled: false
+  }
 
   render() {
 
     const {
       colors,
-      state,
+      state: {
+        disabled
+      },
       roll,
     } = this
 
@@ -30,7 +35,10 @@ class RollButton extends Component {
 
         <Button
           onClick={this.roll}
-        />
+          disabled={disabled}
+        >
+          {(disabled) ? "..." : "ROLL"}
+        </Button>
 
 
 
@@ -50,7 +58,14 @@ class RollButton extends Component {
 
 
   roll = () => {
+    this.setState({disabled: true})
     this.socket.emit('roll', this.state)
+    setTimeout(
+      ()=> {
+        this.setState({disabled: false})
+      },
+      3000
+    )
   }
 
 
@@ -62,7 +77,13 @@ const Button = styled.button`
   width: 50vh;
   height: 50vh;
   border-radius: 50vh;
-  background-color: green;
+  background-color: teal;
+  color: white;
+  font-size: 50px;
+  font-family:sans-serif;
+  &:disabled {
+    opacity: .5;
+  }
 `
 
 
@@ -70,10 +91,16 @@ const Container = styled.div`
   display: flex;
   flex-direction: row;
   width: 100%;
-  min-height:100vh;
+  min-height:115vh;
   background-color: black;
   justify-content: space-around;
   align-items: center;
+`
+
+injectGlobal`
+  body {
+    margin: 0;
+  }
 `
 
 export default RollButton

@@ -56,11 +56,15 @@ const roll = () => {
 
 }
 
+let tips = []
+
 
 // socket.io server
 io.on('connection', socket => {
 
   io.emit('state', state)
+
+  io.emit('newTips', tips)
 
   socket.join('camel')
 
@@ -76,21 +80,20 @@ io.on('connection', socket => {
 
     io.in('camel').emit('state', state)
   })
+
+  socket.on('tip', (newTip) => {
+
+    if (tips.length > 9) {
+      tips.shift()
+    }
+
+    tips.push(newTip)
+
+    io.in('camel').emit('newTips', tips)
+  })
 })
 
 nextApp.prepare().then(() => {
-
-  app.get('/trigger', ()=>{
-    if (state.unpickedColors.length > 0){
-      roll()
-    } else {
-      state = {
-        ...initialState
-      }
-    }
-
-    io.in('camel').emit('state', state)
-  })
 
   app.get('*', (req, res) => {
     return nextHandler(req, res)
